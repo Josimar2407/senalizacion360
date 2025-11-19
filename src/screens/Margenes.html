@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Impresión Interactiva</title>
+    <style>
+        /* ===== ESTILOS CSS ===== */
+
+        body {
+            font-family: sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Controles de la Interfaz */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            align-items: flex-start;
+        }
+
+        .margin-controls, .text-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .margin-controls button {
+            padding: 8px 15px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .margin-controls button:hover {
+            background: #2563eb;
+        }
+        
+        .margin-controls label, .text-controls label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 14px;
+        }
+        .text-controls input {
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+
+        /* ===== ESTILOS DE IMPRESIÓN (Tu código base) ===== */
+        .print-page{
+            width: 816px; 
+            height: 1056px;
+            margin: 10px auto; 
+            border: 2px dashed #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+
+        /* GRID: Aquí se aplica el margen interno (padding) */
+        .grid-wrap{ width:100%; height:100%; display:grid; }
+        
+        /* .grid-1: La función JS controlará el padding */
+        .grid-1{ 
+            padding: 24px; /* Valor inicial, será sobrescrito por JS */
+            gap:0; 
+        }
+
+        /* Carteles */
+        .sign{
+            border:1px solid #d1d5db; background:#fff; border-radius:12px;
+            display:flex; align-items:center; justify-content:center; padding:16px; text-align:center;
+            min-height: 200px; 
+        }
+        .sign-inner{ 
+            width:100%; height:100%; display:flex; flex-direction:column; 
+            justify-content:center; align-items:center; gap:8px; 
+        }
+
+        /* Tipografía */
+        .sign-title{
+            font-weight:900; text-transform:uppercase; line-height:1.06; letter-spacing:.2px;
+            word-break:break-word; margin:0 auto;
+        }
+        .sign-subtitle{
+             color:#64748b; font-size:14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <div class="margin-controls">
+            <label>Ajustar Márgenes Internos (Top, Right, Bottom, Left):</label>
+            <button onclick="setMargin(50, 50, 50, 50)">Margen Uniforme (50px)</button>
+            <button onclick="setMargin(500, 24, 24, 24)">Bajar Cartel (500px Top)</button>
+            <button onclick="setMargin(24, 24, 200, 24)">Subir Cartel (200px Bottom)</button>
+            <button onclick="setMargin(24, 150, 24, 24)">Mover Izquierda (150px Right)</button>
+            <button onclick="setMargin(500, 100, 50, 150)">Personalizado (500T, 100R, 50B, 150L)</button>
+        </div>
+
+        <div class="text-controls">
+            <label for="titulo">Editar Título:</label>
+            <input type="text" id="titulo" value="DESC EN SHAMPOO TIO NACHITO" onkeyup="updateText('title', this.value)">
+            
+            <label for="subtitulo">Editar Subtítulo:</label>
+            <input type="text" id="subtitulo" value="VIGENCIA 31/12/1969 al 31/12/1989" onkeyup="updateText('subtitle', this.value)">
+        </div>
+    </div>
+
+    <div class="print-page">
+        <div id="gridContainer" class="grid-wrap grid-1">
+            <div class="sign sign-tcarta">
+                <div class="sign-inner">
+                    <div id="signTitle" class="sign-title">DESC EN SHAMPOO TIO NACHITO</div>
+                    <div id="signSubtitle" class="sign-subtitle">VIGENCIA 31/12/1969 al 31/12/1989</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Obtenemos el contenedor de la rejilla
+        const gridContainer = document.getElementById('gridContainer');
+        const signTitle = document.getElementById('signTitle');
+        const signSubtitle = document.getElementById('signSubtitle');
+
+        /**
+         * Función para configurar los cuatro márgenes internos (padding).
+         * @param {number} top - Valor del padding superior en píxeles.
+         * @param {number} right - Valor del padding derecho en píxeles.
+         * @param {number} bottom - Valor del padding inferior en píxeles.
+         * @param {number} left - Valor del padding izquierdo en píxeles.
+         */
+        function setMargin(top, right, bottom, left) {
+            // Sintaxis CSS: padding: top right bottom left;
+            gridContainer.style.padding = `${top}px ${right}px ${bottom}px ${left}px`;
+            
+            console.log(`Márgenes ajustados: Top=${top}px, Right=${right}px, Bottom=${bottom}px, Left=${left}px`);
+        }
+
+        /**
+         * Función para actualizar el texto del cartel.
+         */
+        function updateText(type, value) {
+            if (type === 'title') {
+                signTitle.textContent = value.toUpperCase();
+            } else if (type === 'subtitle') {
+                signSubtitle.textContent = value;
+            }
+        }
+
+        // Inicializar con un margen uniforme de 24px
+        setMargin(24, 24, 24, 24); 
+    </script>
+
+</body>
+</html>

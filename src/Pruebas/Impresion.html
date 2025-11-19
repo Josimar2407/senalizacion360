@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prueba de impresión carta</title>
+
+  <style>
+  /* Contenedor de galería */
+  .thumb-grid{
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+    align-items: start;
+  }
+  .thumb{
+    /* Ajusta la escala aquí: 0.28 ≈ ancho carta 8.5in a ~230px */
+    --thumb-scale: 0.28;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #ddd; border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    /* Dimensiones “visibles” del contenedor según orientación */
+  }
+  .thumb.portrait{
+    width: calc(8.5in * var(--thumb-scale));
+    height: calc(11in * var(--thumb-scale));
+  }
+  .thumb.landscape{
+    width: calc(11in * var(--thumb-scale));
+    height: calc(8.5in * var(--thumb-scale));
+  }
+  /* El truco: metemos una .sheet real adentro, pero la escalamos */
+  .thumb .sheet{
+    transform: scale(var(--thumb-scale));
+    transform-origin: top left;
+    /* Evita scroll interno; dejamos que lo recorte el contenedor */
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  /* Quita resaltado táctil y barras */
+  .thumb .no-scrollbar::-webkit-scrollbar{ display:none; }
+  .thumb .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+
+  /* No imprimir las miniaturas */
+  @media print {
+    .thumb-grid { display: none !important; }
+  }
+</style>
+
+<!-- Ejemplo de uso: reutiliza tu mismo markup .sheet -->
+<section class="thumb-grid">
+  <div class="thumb portrait">
+    <div class="sheet portrait">
+      <div class="absolute" style="padding:0.5in">
+        <h1 style="margin:0 0 .2in 0;">Miniatura – Portrait</h1>
+        <p>Esta es la misma hoja renderizada a escala.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="thumb landscape">
+    <div class="sheet landscape">
+      <div class="absolute" style="padding:0.5in">
+        <h1 style="margin:0 0 .2in 0;">Miniatura – Landscape</h1>
+        <p>Idéntico layout, solo reducido.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</head>
+
+<body>
+  <div class="sheet portrait">
+    <div class="absolute">
+      <h1>Hoja 1 (Portrait)</h1>
+      <p>Esta hoja está configurada para impresión vertical (8.5 × 11 in).</p>
+      <div class="avoid-break">
+        <p>Puedes duplicar este bloque para probar cortes entre páginas.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet landscape">
+    <div class="absolute">
+      <h1>Hoja 2 (Landscape)</h1>
+      <p>Esta hoja está configurada para impresión horizontal (11 × 8.5 in).</p>
+    </div>
+  </div>
+</body>
+</html>

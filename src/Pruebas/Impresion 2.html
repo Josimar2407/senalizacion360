@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Previsualización e Impresión de Planillas</title>
+
+    <style>
+        /* ---------- Miniaturas (no se imprimen) ---------- */
+        .thumb-grid{
+            display:grid; gap:12px;
+            grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+            align-items:start;
+            margin: 8px 0 12px;
+        }
+        .thumb{
+            --thumb-scale: 0.28; /* escala de la hoja real */
+            position: relative; overflow: hidden;
+            border: 1px solid #ddd; border-radius: 8px; background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+        }
+        .thumb.portrait{
+            width: calc(8.5in * var(--thumb-scale));
+            height: calc(11in  * var(--thumb-scale));
+        }
+        .thumb.landscape{
+            width: calc(11in  * var(--thumb-scale));
+            height: calc(8.5in * var(--thumb-scale));
+        }
+        .thumb .sheet{
+            transform: scale(var(--thumb-scale));
+            transform-origin: top left;
+            margin: 0 !important; border: none !important; border-radius: 0 !important; box-shadow: none !important;
+            width: 8.5in; height: 11in; /* base portrait; el layout interno ya se ajusta por clase */
+        }
+        .thumb .no-scrollbar::-webkit-scrollbar{ display:none; }
+        .thumb .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+
+        @media print { .thumb-grid { display: none !important; } }
+
+        /* ---------- Páginas carta (previsualización e impresión) ---------- */
+        .plan-root { padding: 12px; min-height: calc(100vh - 56px); }
+        .plan-head { display:flex; align-items:center; justify-content:space-between; gap: 8px; }
+        .plan-head .actions button { border:1px solid #e5e7eb; background:#fff; padding:8px 12px; border-radius:8px; }
+        .resume { color:#475569; font-size:13px; }
+
+        .preview-wall { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap:12px; }
+
+        .print-page { 
+            background:#fff; border:1px solid #e5e7eb; border-radius:10px; 
+            width: 816px; height: 1056px; /* carta vertical ~96dpi */
+            margin: 6px auto; box-shadow: 0 8px 24px rgba(0,0,0,.06);
+            overflow: hidden; page-break-after: always; position: relative;
+        }
+        .print-page.landscape-sim .grid-wrap{
+            /* simulación landscape dentro de portrait */
+            width: 1056px; height: 816px;
+            transform: rotate(90deg) translate(120px, -120px);
+            transform-origin: left top;
+        }
+
+        /* Grids por formato */
+        .grid-wrap { width:100%; height:100%; display:grid; }
+        .grid-1  { grid-template-columns: 1fr; grid-template-rows: 1fr; padding: 24px; }
+        .grid-2  { grid-template-columns: 1fr; grid-template-rows: repeat(2, 1fr); padding: 16px; gap: 12px; }
+        .grid-4  { grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(2, 1fr); padding: 16px; gap: 12px; }
+        .grid-8  { grid-template-columns: repeat(2,1fr); grid-template-rows: repeat(4, 1fr); padding: 12px; gap: 8px; }
+
+        /* Tarjeta signo */
+        .sign { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; display:flex; align-items:center; justify-content:center; text-align:center; }
+        .sign-inner { max-width: 90%; margin: 0 auto; display:flex; flex-direction:column; gap:10px; }
+        .sign-head { display:flex; gap:8px; justify-content:center; align-items:center; }
+        .badge { background:#111; color:#fff; border-radius:8px; padding:4px 8px; font-weight:800; font-size:12px; }
+        .badge-alt { background:#fde68a; color:#7c2d12; border-radius:8px; padding:4px 8px; font-weight:800; font-size:12px; border:1px solid #f59e0b; }
+
+        /* Título (máx 3 líneas) */
+        .sign-title { 
+            font-weight:900; font-size: 28px; line-height: 1.1; text-transform: uppercase; word-break: break-word;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 2px;
+        }
+
+        /* Precios: regular tachado + promo */
+        .sign-prices { display:flex; gap:12px; justify-content:center; align-items: baseline; }
+        .sign-prices .regular { color:#6b7280; text-decoration: line-through; font-size:18px; }
+        .sign-prices .promo   { color:#111; font-weight:900; font-size:24px; }
+
+        /* Vigencia (máx 2 líneas) */
+        .sign-vigencia { display:flex; gap:8px; justify-content:center; align-items:flex-start; }
+        .sign-vigencia .pill { background:#111; color:#fff; border-radius:6px; padding:2px 6px; font-weight:700; font-size:12px; }
+        .sign-vigencia .clamp-2 { 
+            max-width: 70%;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; 
+            color:#334155; font-size:14px; text-align:left;
+        }
+
+        /* Escala por formato */
+        .sign-media    .sign-title { font-size: 26px; }
+        .sign-cuarto   .sign-title { font-size: 22px; }
+        .sign-octavo   .sign-title { font-size: 18px; }
+        .sign-pescante .sign-title { font-size: 28px; }
+        .sign-tcarta   .sign-title,
+        .sign-tresxdos .sign-title { font-size: 28px; }
+
+        .sign-pescante .sign-prices .promo { font-size: 26px; }
+        .sign-media    .sign-prices .promo { font-size: 22px; }
+        .sign-cuarto   .sign-prices .promo { font-size: 18px; }
+        .sign-octavo   .sign-prices .promo { font-size: 16px; }
+
+        /* Impresión real */
+        @media print {
+            body { background:#fff !important; }
+            .no-print { display:none !important; }
+            .print-page { border: 0 !important; border-radius: 0 !important; box-shadow:none !important; width: auto; height: auto; margin: 0; page-break-after: always; }
+            @page { size: letter portrait; margin: 12mm; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="plan-root no-print">
+        <div class="plan-head">
+            <h1>Generador de Planillas de Precios</h1>
+            <div class="actions">
+                <button onclick="window.print()">🖨️ Imprimir Planillas</button> 
+            </div>
+        </div>
+        <p class="resume">Previsualización de 2 planillas listas para imprimir en tamaño Carta (8.5in x 11in). Usa el atajo **Ctrl+P** o el botón "Imprimir" para ver el resultado final.</p>
+
+        <h2>Miniaturas de las Hojas</h2>
+        <div class="thumb-grid">
+            <div class="thumb portrait">
+                <div class="sheet grid-4 no-scrollbar">
+                    <div class="sign sign-cuarto">
+                        <div class="sign-inner">
+                            <div class="sign-head">
+                                <span class="badge">OFERTA</span>
+                                <span class="badge-alt">PRODUCTO A</span>
+                            </div>
+                            <h2 class="sign-title">Refresco de cola sabor original lata 355ml</h2>
+                            <div class="sign-prices">
+                                <span class="regular">$15.00</span>
+                                <span class="promo">$10.50</span>
+                            </div>
+                            <div class="sign-vigencia">
+                                <span class="pill">Vigencia</span>
+                                <span class="clamp-2">Promoción válida del 1 al 15 de Noviembre o hasta agotar existencias.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sign sign-cuarto">...</div>
+                    <div class="sign sign-cuarto">...</div>
+                    <div class="sign sign-cuarto">...</div>
+                </div>
+            </div>
+
+            <div class="thumb portrait">
+                <div class="sheet grid-2 no-scrollbar">
+                    <div class="sign sign-media">
+                        <div class="sign-inner">
+                            <div class="sign-head">
+                                <span class="badge">OFERTA ESPECIAL</span>
+                            </div>
+                            <h2 class="sign-title">Cereales de trigo y miel familiar 1.2 kg</h2>
+                            <div class="sign-prices">
+                                <span class="regular">$120.90</span>
+                                <span class="promo">$89.90</span>
+                            </div>
+                            <div class="sign-vigencia">
+                                <span class="pill">Válido</span>
+                                <span class="clamp-2">Solo los días Lunes y Martes de Noviembre 2025.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sign sign-media">...</div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Previsualización Completa</h2>
+        <div class="preview-wall">
+            </div>
+    </div>
+
+
+    <div class="print-page">
+        <div class="grid-wrap grid-4">
+            <div class="sign sign-cuarto">
+                <div class="sign-inner">
+                    <div class="sign-head">
+                        <span class="badge">OFERTA</span>
+                        <span class="badge-alt">PRODUCTO A</span>
+                    </div>
+                    <h2 class="sign-title">Refresco de cola sabor original lata 355ml</h2>
+                    <div class="sign-prices">
+                        <span class="regular">$15.00</span>
+                        <span class="promo">$10.50</span>
+                    </div>
+                    <div class="sign-vigencia">
+                        <span class="pill">Vigencia</span>
+                        <span class="clamp-2">Promoción válida del 1 al 15 de Noviembre o hasta agotar existencias.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sign sign-cuarto">
+                <div class="sign-inner">
+                    <div class="sign-head">
+                        <span class="badge">2x1</span>
+                    </div>
+                    <h2 class="sign-title">Papel higiénico doble hoja paquete de 4 rollos</h2>
+                    <div class="sign-prices">
+                        <span class="regular">$45.00</span>
+                        <span class="promo">$22.50 C/U</span>
+                    </div>
+                    <div class="sign-vigencia">
+                        <span class="pill">Válido hasta</span>
+                        <span class="clamp-2">Oferta exclusiva para clientes con tarjeta de fidelidad.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sign sign-cuarto">
+                <div class="sign-inner">
+                    <div class="sign-head">
+                        <span class="badge-alt">NUEVO</span>
+                    </div>
+                    <h2 class="sign-title">Galletas de avena y arándanos caja 150g</h2>
+                    <div class="sign-prices">
+                        <span class="regular">$30.00</span>
+                        <span class="promo">$25.00</span>
+                    </div>
+                    <div class="sign-vigencia">
+                        <span class="pill">Limitado</span>
+                        <span class="clamp-2">Precio de introducción por tiempo limitado en todas las sucursales.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sign sign-cuarto">
+                <div class="sign-inner">
+                    <div class="sign-head">
+                        <span class="badge">LIQUIDACIÓN</span>
+                    </div>
+                    <h2 class="sign-title">Detergente líquido ropa delicada 1.5 litros</h2>
+                    <div class="sign-prices">
+                        <span class="regular">$99.90</span>
+                        <span class="promo">$59.90</span>
+                    </div>
+                    <div class="sign-vigencia">
+                        <span class="pill">Fin de mes</span>
+                        <span class="clamp-2">Últimas unidades disponibles. No aplica con otras promociones.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="print-page landscape-sim">
+        <div class="grid-wrap grid-2">
+            
+            <div class="sign sign-media">
+                <div class="sign-inner">
+                    <div class="sign-head">
+                        <span class="badge">SÚPER AHORRO</span>
+                        <span class="badge-alt">PACK</span>
+                    </div>
+                    <h2 class="sign-title">Cereales de trigo y miel familiar 1.2 kg + 2 cajas de leche deslactosada</h2>
+                    <div class="sign-prices">
+                        <span class="regular">$195.00</span>
+                        <span class="promo">$149.90</span>
+                    </div>
+                    <div class="sign-vigencia">
+                        <span class="pill">Promoción</span>
+                        <span class="clamp-2">Válido en la compra de otros 3 productos seleccionados de la marca X.</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sign sign-media">
+                <div class="sign-inner">
+                    <div class="sign-head">
+                        <span class="badge">GRAN VENTA</span>
+                    </div>
+                    <h2 class="sign-title">Televisor LED 50 pulgadas 4k smart tv</h2>
+                    <div class="sign-prices">
+                        <span class="regular">$8,999.00</span>
+                        <span class="promo">$6,499.00</span>
+                    </div>
+                    <div class="sign-vigencia">
+                        <span class="pill">Solo por hoy</span>
+                        <span class="clamp-2">Aplica un 15% de descuento adicional pagando con tarjeta de crédito bancaria.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
