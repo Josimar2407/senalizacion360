@@ -105,11 +105,11 @@ function SignContent({ tile }) {
 
   return (
     <div className="sign-inner">
-      {/* Badge del formato y/o 3x2 */}
+      {/* Badge del formato y/o 3x2 
       <div className="sign-head">
         <span className="badge">{SIZE_LABEL[tile.size] || tile.size}</span>
         {tile.badge && <span className="badge-alt">{tile.badge}</span>}
-      </div>
+      </div>*/}
 
       {/* Título centrado, 3 líneas máx */}
       <div className="sign-title clamp-3" title={tile.title}>
@@ -119,18 +119,26 @@ function SignContent({ tile }) {
       {/* Precios (si existen) */}
       {hasPrices && (
         <div className="sign-prices">
-          {tile.precioRegular != null && (
-            <span className="regular">
-              ${String(tile.precioRegular).trim()}
-            </span>
-          )}
-          {tile.precioPromocion != null && (
-            <span className="promo">
-              ${String(tile.precioPromocion).trim()}
-            </span>
-          )}
+          <div>
+            <span>DE: </span>
+            {tile.precioRegular != null && (
+              <span className="regular">
+                ${String(tile.precioRegular).trim()}
+              </span>
+            )}
+          </div>
+
+          <div>
+            <span>A: </span>
+            {tile.precioPromocion != null && (
+              <span className="promo">
+                ${String(tile.precioPromocion).trim()}
+              </span>
+            )}
+          </div>
         </div>
       )}
+
 
       {/* Vigencia, 2 líneas máx */}
       {tile.subtitle && (
@@ -336,13 +344,14 @@ export default function ScreenPrint({ batch }) {
 
       .sign-prices{
         display:flex;
+        flex-direction:column;
         gap:10px;
         justify-content:center;
         align-items:baseline;
       }
 
       .sign-prices .regular{
-        color:#6b7280;
+        color:#24262b;
         text-decoration: line-through;
 
         /* 🔥 escala automática */
@@ -358,6 +367,7 @@ export default function ScreenPrint({ batch }) {
 
       /* === Vigencia en UNA sola línea, sin romper márgenes === */
       .sign-vigencia{
+        font-weight:700;
         width: 100%;
         margin-top: auto;
         display: flex;
@@ -488,8 +498,8 @@ export default function ScreenPrint({ batch }) {
             Precio regular: {fontCfg.priceRegular}px
             <input
               type="range"
-              min="10"
-              max="32"
+              min="48"
+              max="86"
               value={fontCfg.priceRegular}
               onChange={(e) => handleChange("priceRegular", e.target.value)}
             />
@@ -501,8 +511,8 @@ export default function ScreenPrint({ batch }) {
             Precio promo: {fontCfg.pricePromo}px
             <input
               type="range"
-              min="16"
-              max="48"
+              min="48"
+              max="86"
               value={fontCfg.pricePromo}
               onChange={(e) => handleChange("pricePromo", e.target.value)}
             />
